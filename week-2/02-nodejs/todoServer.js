@@ -39,11 +39,193 @@
 
   Testing the server - run `npm run test-todoServer` command in terminal
  */
-  const express = require('express');
-  const bodyParser = require('body-parser');
+const express = require("express");
+const bodyParser = require("body-parser");
+const fs = require("fs").promises;
+const app = express();
+
+app.use(bodyParser.json());
+
+const file = "./todos.json";
+
+app.get("/todos", async(req, res) => {
+  try {
+    const data= await fs.readFile(file, "utf-8");
+    dataArray = JSON.parse(data)
+    return res.status(200).send(dataArray)
+    
+  } catch (error) {
+    return res.status(500).json({
+      message: "Something went wrong",
+      error: error,
+    });
+  } 
+})
+
+
+
+app.get("/todos/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    let data = await fs.readFile(file, "utf-8");
+    data = JSON.parse(data);
+    const todo = data.filter((todo) => todo.id == id);
+
+    if (todo.length === 0) {
+      return res.status(404).json({
+        message: "Todo not found",
+      });
+    } 
+    
+
+      return res.status(200).send(todo[0]);
+  } catch (error) {
+    return res.status(500).json({
+      message: "Something went wrong",
+      error: error,
+    });
+  }
+});
+
+app.post("/todos", async (req, res) => {
+  const { title, description } = req.body;
+
+  if (!title || !description) {
+    return res.status(400).json({
+      message: "Bad request",
+    });
+  }
+
+  let todo = new Array();
+
+  try {
+    let data = await fs.readFile(file, "utf-8");
+
+    todo = JSON.parse(data);
+
+    const newTodo = {
+      id: todo.length + 1,
+      title: title,
+      description: description,
+    };
+
+    todo.push(newTodo);
+
+
+    await fs.writeFile(file, JSON.stringify(todo));
+    
+    
+    return res.status(201).json({
+      id : todo[0].id,
+    });
+
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Something went wrong",
+      error: error,
+    });
+  }
+
   
-  const app = express();
-  
-  app.use(bodyParser.json());
-  
-  module.exports = app;
+});
+
+app.put("/todos/:id", async (req, res) => {
+  const { id } = req.params;
+  const { title, description } = req.body;
+
+  if (!title && !description) {
+    return res.status(400).json({
+      message: "Bad request",
+    });
+  }
+
+  try {
+    let data = await fs.readFile(file, "utf-8");
+    data = JSON.parse(data);
+    let index = data.findIndex((todo) => todo.id == id);
+    let newTodo = data.filter((todo) => todo.id == id);
+
+    if (!newTodo) {
+      return res.status(404).json({
+        message: "Todo not found",
+      });
+    }
+
+
+
+    if (title) {
+      newTodo[0].title = title;
+    }
+
+    if (description) {
+      newTodo[0].description = description;
+    }
+
+
+    data[index] = newTodo[0];
+
+
+    await fs.writeFile(file, JSON.stringify(data));
+
+    return res.status(200).json({
+      success: true,
+      message: "Todo updated successfully",
+    });
+
+    // data.replace(oldTodo, newTodo);
+  } catch (error) {
+    return res.status(200).json({
+      message: "Something went wrong while reading file",
+      error: error,
+    });
+  }
+
+});
+
+app.delete("/todos/:id", async (req, res) => {
+  const { id } = req.params
+
+  if (!id) {
+    return res.status(400).json({
+      message: "Bad request"
+    })
+  }
+
+  try {
+    let data = await fs.readFile(file, "utf-8");
+    data = JSON.parse(data);
+    let todo = data.filter((todo) => todo.id == id);
+    if (todo.length === 0) {
+      return res.status(200).json({
+        message: "Todo not found"
+      })
+    }
+    const indexToDelete = data.indexOf(todo[0]);
+
+    data = data.splice(indexToDelete, 1);
+
+    await fs.writeFile(file, JSON.stringify(data));
+
+    return res.status(200).json({
+      message: "Todo deleted successfully"
+    })
+
+
+  } catch (error) {
+    return res.status(500).json({
+      message: "Something went wrong",
+      error: error
+    })
+  }
+
+})
+
+// app.listen(3000, () => {
+//   console.log("Server started on port 3000");
+// });
+
+
+
+module.exports = app;

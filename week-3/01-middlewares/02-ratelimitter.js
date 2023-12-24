@@ -16,6 +16,32 @@ setInterval(() => {
     numberOfRequestsForUser = {};
 }, 1000)
 
+
+const rateLimmiter = (req, res, next) => {
+  const id = req.headers["user-id"];
+  if(!id){
+    return res.status(404).send("User not found");
+  }
+
+  if(numberOfRequestsForUser[id] === undefined){
+    numberOfRequestsForUser[id] = 1;
+    next();
+  }
+
+  if(numberOfRequestsForUser[id] < 5){
+    numberOfRequestsForUser[id]++;
+    next();
+  } 
+
+  if(numberOfRequestsForUser[id] >=5){
+    return res.status(404).json({msg: "Too many requests"})
+  }
+  
+}
+
+app.use(rateLimmiter);
+
+
 app.get('/user', function(req, res) {
   res.status(200).json({ name: 'john' });
 });

@@ -4,22 +4,24 @@ const router = Router();
 const {validatePassword, validateUsername} = require("../validators/index")
 const {Admin, Course, User} = require("../db/index")
 
+
 // Admin Routes
-router.post('/signup',async(req, res) => {
+router.post('/signup', async(req, res) => {
     // Implement admin signup logic
     const {username , password} = req.body
-
+    
+    
     if(!username || !password){
         return res.status(400).send('Bad request')
     }
 
-    if(validateEmail(username).success == false || validatePassword(password).success == false){
+    if(validateUsername(username).success == false || validatePassword(password).success == false){
         return res.status(404).send('Invalid Credentials')
     }
 
     if(username.toLowerCase() === "admin"){
         try {
-            const user = await User.create({username, password})
+            const user = await Admin.create({username, password})
             if(!user){
                 return res.status(500).send('Unable to create an Admin')
             }
@@ -48,13 +50,11 @@ router.post('/courses', adminMiddleware, async(req, res) => {
 
     try {
 
-        const allCourses = await Course.find({})
-        const id = allCourses.length + 1
-        const course = await Course.create({id , title, description, price, imageLink})
+        const course = await Course.create({ title, description, price, imageLink})
         
         return res.status(200).json({
             message : "Course created successfully",
-            courseId : id
+            courseId : course._id
         })
         
     } catch (error) {

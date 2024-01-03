@@ -1,19 +1,19 @@
 const mongoose = require("mongoose");
 
 // Connect to MongoDB
-mongoose.connect("your-mongodb-url");
+mongoose.connect("mongodb+srv://RAGHAV:GrtCP7uSBybBaRUY@cluster0.tiohzqh.mongodb.net/cohortCourseSelling_1");
 
 // Define schemas
 const AdminSchema = new mongoose.Schema({
   // Schema definition here
   // id : String,
   username: {
-    String,
+    type : String,
     required: true,
   },
 
   password: {
-    String,
+    type : String,
     required: true,
   },
 
@@ -29,11 +29,11 @@ const UserSchema = new mongoose.Schema({
   // Schema definition here
   // id: String,
   username: {
-    String,
+    type : String,
     required: true,
   },
   password: {
-    String,
+    type : String,
     required: true,
   },
   coursesPurchased: [
@@ -46,7 +46,7 @@ const UserSchema = new mongoose.Schema({
 
 const CourseSchema = new mongoose.Schema({
   // Schema definition here
-  id : Number,
+  // id : Number,
   title: {
     type: String,
     required: true,
@@ -55,7 +55,7 @@ const CourseSchema = new mongoose.Schema({
     type: String,
   },
   price: {
-    Number,
+    type : Number,
     required: true,
   },
   imageLink: {
@@ -68,6 +68,7 @@ const CourseSchema = new mongoose.Schema({
     },
   ],
   courseAdmin: {
+    
     type: mongoose.Schema.Types.ObjectId,
     ref: "Admin",
   },

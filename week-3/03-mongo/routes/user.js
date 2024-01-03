@@ -1,7 +1,8 @@
 const { Router } = require("express");
 const router = Router();
 const userMiddleware = require("../middleware/user");
-const { Course } = require("../db");
+const { Course, User  } = require("../db");
+const {validateEmail, validatePassword, validateUsername} = require("../validators/index")
 
 // User Routes
 router.post('/signup', (req, res) => {
@@ -12,7 +13,7 @@ router.post('/signup', (req, res) => {
         return res.status(400).send('Bad request')
     }
 
-    if(validateEmail(username).success == false || validatePassword(password).success == false){
+    if(validateUsername(username).success == false || validatePassword(password).success == false){
         return res.status(404).send('Invalid Credentials')
     }
 
@@ -36,27 +37,52 @@ router.post('/signup', (req, res) => {
     })
 });
 
-router.get('/courses', (req, res) => {
+router.get('/courses', userMiddleware, async(req, res) => {
     // Implement listing all courses logic
+    console.log(req.params.courseId)
+    try {
+        const courses = await Course.find({})
+    
+        if(courses.length === 0){
+            return res.status(404).send('No courses found')
+        }
+    
+        return res.status(200).json({
+            success : true,
+            courses : courses
+        })
+        
+    } catch (error) {
+        return res.status(500).send('Internal server error')
+    }
+    
+    
+
 });
 
 router.post('/courses/:courseId', userMiddleware, async(req, res) => {
     // Implement course purchase logic
     const {courseId} = req.params
+    const {username} = req.headers
+    
 
     if(!courseId){
         return res.status(400).send('Bad request')
     }
 
     try{
-        const course = await Course.findOne({id : courseId})
-
+        const user = await User.findOneAndUpdate({username : username}, {$push : {coursesPurchased : courseId}}, {new : true})
+        const course = await Course.findOneAndUpdate({_id : courseId}, {$push : {enrolledUsers : user._id}}, {new : true})
+        console.log(course)
+        console.log(user)
         if(!course){
             return res.status(404).send('Course not found')
         }
 
         return res.status(200).json({
-            message : "Course purchased successfully"
+            message : "Course purchased successfully",
+            course : course,
+            user : user
         })
     }
     catch(e){
@@ -64,8 +90,30 @@ router.post('/courses/:courseId', userMiddleware, async(req, res) => {
     }
 });
 
-router.get('/purchasedCourses', userMiddleware, (req, res) => {
+router.get('/purchasedCourses', userMiddleware, async(req, res) => {
     // Implement fetching purchased courses logic
+    const {username, password} = req.headers
+
+    if(!username || !password){
+        return res.status(400).send('Bad request')
+    }
+
+    try {
+        const courses = await User.find({
+            username : username,
+        }).populate("coursesPurchased").exec()
+
+        if(courses.length === 0){
+            return res.status(404).send('No courses found')
+        }
+
+        return res.status(200).json({
+            success : true,
+            courses : courses
+        })
+    } catch (error) {
+        return res.status(500).send('Internal server error')
+    }
 });
 
 module.exports = router
